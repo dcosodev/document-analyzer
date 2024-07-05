@@ -17,6 +17,7 @@ Document Analyzer is a .NET API designed to analyze images and extract metadata,
   - Azure Blob Storage
   - Azure Form Recognizer
   - Azure IP Geolocation
+  - Azure Computer Vision
 
 ## Setup
 
