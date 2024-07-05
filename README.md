@@ -1,6 +1,6 @@
 # Document Analyzer
 
-Document Analyzer is a .NET API designed to analyze images and extract metadata, including geolocation information and camera details. This API is a replica of an original API developed in Java.
+Document Analyzer is a .NET API designed to analyze images and extract metadata, including geolocation information and camera details. 
 
 ## Features
 
