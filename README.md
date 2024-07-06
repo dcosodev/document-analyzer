@@ -24,7 +24,7 @@ Document Analyzer is a .NET API designed to analyze images and extract metadata,
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/document-analyzer.git
+   git clone https://github.com/dcosodev/document-analyzer.git
    cd document-analyzer
    ```
 
