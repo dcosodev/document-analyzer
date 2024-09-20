@@ -1,138 +1,208 @@
-# 🎉 **Document Analyzer** 🖼️
+# Document Analyzer
 
-¡Bienvenido a **Document Analyzer**, una poderosa API en .NET diseñada para analizar imágenes y documentos de manera eficiente! 🎯 Utilizando las capacidades de Azure, esta API puede extraer metadatos, verificar la autenticidad de las imágenes, detectar modificaciones y más. 📸📝
+[![CI](https://github.com/dcosodev/document-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/dcosodev/document-analyzer/actions/workflows/ci.yml)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
+An ASP.NET Core 8 Web API that scores photographs and identity documents for
+**authenticity**, **recency** and **tampering**, and extracts their structured
+content using Azure AI services.
 
-## 🚀 **Características Principales**
+Given an uploaded image (or a public image URL), the API reads the EXIF
+metadata, cross-checks the embedded GPS coordinates against the caller's
+IP-derived location and the reported device location, and returns three
+heuristic scores together with a plain-language explanation of each. Identity
+documents and invoices are additionally run through Azure Document
+Intelligence, and selfies through the Azure Face API.
 
-- 📷 **Análisis de Imágenes**: Extrae metadatos de las imágenes, como datos de geolocalización y detalles de la cámara.
-- 🛡️ **Verificación de Autenticidad**: Asegura que las imágenes provengan de una cámara real y no de fuentes sospechosas.
-- 🖼️ **Detección de Modificaciones**: Identifica si las imágenes han sido editadas o manipuladas.
-- 📝 **Extracción de Datos de Documentos**: Con Azure Form Recognizer, se extraen datos clave de documentos como facturas o identificaciones.
-- ☁️ **Almacenamiento en Azure Blob**: Guarda archivos en la nube de manera segura y accesible.
-
----
-
-## 🛠️ **Requisitos del Sistema**
-
-Para utilizar **Document Analyzer**, necesitarás:
-
-- .NET 8.0 o superior 💻
-- Cuenta de Azure con acceso a:
-  - **Azure Blob Storage** ☁️
-  - **Azure Form Recognizer** 🧾
-  - **Azure IP Geolocation** 🌍
-  - **Azure Computer Vision** 👁️
+The original use case was a remote-onboarding flow: verifying that a submitted
+ID photo was taken by a real camera, at the claimed place, at the claimed time,
+and had not been retouched before upload.
 
 ---
 
-## 📦 **Instalación y Configuración**
+## Table of contents
 
-### 1. Clonar el repositorio:
+- [How it works](#how-it-works)
+- [The three scores](#the-three-scores)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [API reference](#api-reference)
+- [Documentation](#documentation)
+- [Platform support](#platform-support)
+- [Known limitations](#known-limitations)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## How it works
+
+```
+                 ┌──────────────────────────────────────┐
+  multipart/     │      ImageAnalysisController         │
+  form-data ────▶│      POST /api/ImageAnalysis/        │
+  (files + URLs) │            imageAnalyse              │
+                 └───────────────────┬──────────────────┘
+                                     │
+                          ┌──────────▼───────────┐
+                          │ ImageProcessingService│
+                          └──────────┬───────────┘
+                                     │
+        ┌────────────────┬───────────┼────────────┬─────────────────┐
+        │                │           │            │                 │
+┌───────▼──────┐ ┌───────▼──────┐ ┌──▼─────────┐ ┌▼──────────────┐ ┌▼─────────────┐
+│MetadataReader│ │IPGeolocation │ │ Genuine /  │ │ Blob Storage  │ │ Face API  or │
+│ EXIF tags    │ │ ip → lat/lon │ │ Live /     │ │ upload → URL  │ │ Document     │
+│              │ │              │ │ Modified   │ │               │ │ Intelligence │
+└──────────────┘ └──────────────┘ └────────────┘ └───────────────┘ └──────────────┘
+                                     │
+                          ┌──────────▼───────────┐
+                          │  PhotoResponse[]     │
+                          │  scores + extraction │
+                          └──────────────────────┘
+```
+
+Each submitted file is written to a temporary local path, parsed for EXIF
+metadata, uploaded to an Azure Blob container so that the Azure AI services can
+reach it over a public URL, analysed, and then deleted locally. Failures on a
+single image are logged and skipped; the rest of the batch still returns.
+
+## The three scores
+
+All three are percentages derived from EXIF metadata — they are **heuristics,
+not forensic proof**. Full derivation in [`docs/SCORING.md`](docs/SCORING.md).
+
+| Score | Question it answers | Signals used |
+|---|---|---|
+| `Genuine` | Did a real camera produce this file? | Presence of the `Make` and `Model` EXIF tags |
+| `Live` | Was it taken here, and just now? | Haversine distance between EXIF GPS, the caller-reported GPS (≤ 10 km) and the IP-derived location (≤ 500 km), plus whether the capture timestamp is under 60 minutes old |
+| `Modified` | Has it been through an editor? | Presence of editing-software metadata, and whether the original and modified timestamps differ |
+
+Each score ships with a matching `*Explanation` string, so the response is
+directly presentable to an end user or a reviewing agent.
+
+## Quick start
+
+**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download) and an
+Azure subscription with Document Intelligence, Face API and Blob Storage
+resources. See [Platform support](#platform-support) before running on
+macOS or Linux.
 
 ```bash
 git clone https://github.com/dcosodev/document-analyzer.git
 cd document-analyzer
-```
 
-### 2. Configurar los parámetros de conexión en el archivo `appsettings.json`:
+cp appsettings.example.json appsettings.json
+# edit appsettings.json with your Azure endpoints and keys
 
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "Azure": {
-    "AI": {
-      "Key": "your_azure_key",
-      "Endpoint": "https://your_azure_endpoint.cognitiveservices.azure.com/"
-    },
-    "DocumentIntelligence": {
-      "Key": "your_form_recognizer_key",
-      "Endpoint": "https://your_form_recognizer_endpoint.cognitiveservices.azure.com/"
-    },
-    "Storage": {
-      "ConnectionString": "your_azure_blob_storage_connection_string"
-    }
-  },
-  "IPGeolocation": {
-    "ApiKey": "your_ip_geolocation_key",
-    "Endpoint": "https://api.ipgeolocation.io/ipgeo"
-  }
-}
-```
-
-### 3. Construir y ejecutar el proyecto:
-
-```bash
-dotnet build
+dotnet restore
 dotnet run
 ```
 
----
+The API listens on `https://localhost:5001` and `http://localhost:5000`.
+In the `Development` environment, interactive OpenAPI docs are served at
+<https://localhost:5001/swagger>.
 
-## 🖥️ **Uso de la API**
+Smoke-test it with the ready-made request in
+[`ImageAnalysisAPI.http`](ImageAnalysisAPI.http) (VS Code REST Client or
+Visual Studio), or with curl:
 
-Con **Document Analyzer** en funcionamiento, puedes utilizar herramientas como Postman para hacer solicitudes a la API. Aquí algunos ejemplos:
-
-### 📩 **Análisis de Imágenes**
-**POST `/api/ImageAnalysis/analyze`**
-
-Envía imágenes para analizar su autenticidad y si han sido modificadas.
-
-- **Parámetros**:
-  - `paths` (opcional): Arreglo de rutas de imágenes.
-  - `gps` (opcional): Datos GPS.
-  - `images` (opcional): Arreglo de archivos de imagen.
-  - `clientCamera` (opcional): Indica si la imagen fue tomada con una cámara cliente.
-  - `clientIP` (opcional): Dirección IP del cliente.
-  - `type` (requerido): Tipo de documento a analizar (selfie, id, pasaporte, factura).
-
----
-
-## 🔍 **Ejemplos de Uso**
-
-### 1. **Análisis de una selfie**
 ```bash
-POST /api/ImageAnalysis/analyze
-{
-  "type": "selfie",
-  "images": [file.jpg]
-}
+curl -k -X POST https://localhost:5001/api/ImageAnalysis/imageAnalyse \
+  -F "type=idpassport" \
+  -F "gps=40.712776,-74.005974" \
+  -F "clientIP=8.8.8.8" \
+  -F "images=@passport.jpg"
 ```
 
-### 2. **Análisis de un pasaporte**
-```bash
-POST /api/ImageAnalysis/analyze
-{
-  "type": "passport",
-  "images": [file.jpg]
-}
-```
+## Configuration
 
----
+`appsettings.json` is **git-ignored on purpose** — it holds live credentials.
+Copy `appsettings.example.json` and fill it in. Every key below is required;
+the application fails fast at startup if one is missing.
 
-## 🛡️ **Seguridad**
+| Key | Azure resource |
+|---|---|
+| `Azure:DocumentIntelligence:Endpoint` / `:Key` | Document Intelligence (formerly Form Recognizer) |
+| `Azure:FaceAPI:Endpoint` / `:SubscriptionKey` | Face API |
+| `Azure:Storage:ConnectionString` | Blob Storage account |
+| `IPGeolocation:Endpoint` / `:ApiKey` | [ipgeolocation.io](https://ipgeolocation.io) |
 
-Toda la comunicación con **Document Analyzer** está protegida mediante HTTPS. Asegúrate de proteger tus claves y tokens de Azure adecuadamente, evitando su exposición pública.
+For deployments, prefer environment variables over the file — ASP.NET Core
+maps `Azure__Storage__ConnectionString` onto `Azure:Storage:ConnectionString`
+automatically. Full reference in
+[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md).
 
----
+## API reference
 
-## 🧩 **Contribuciones**
+### `POST /api/ImageAnalysis/imageAnalyse`
 
-¡Contribuciones son siempre bienvenidas! 🌟 Si tienes alguna idea de mejora o encontraste un error, no dudes en abrir un _issue_ o enviar un _pull request_. Juntos podemos hacer **Document Analyzer** aún mejor.
+`Content-Type: multipart/form-data`
 
----
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `images` | file[] | one of `images`/`paths` | Image files to analyse |
+| `paths` | string[] | one of `images`/`paths` | Absolute URLs to publicly reachable images |
+| `type` | string | yes | Analysis mode — see below |
+| `gps` | string | no | Device location as `"lat,lon"`, used for the `Live` score |
+| `clientIP` | string | no | Caller IP, resolved to a coarse location |
+| `clientCamera` | bool | no | Whether the capture came from an in-app camera |
 
-## 📜 **Licencia**
+**`type` values:** `face` routes to the Face API; `idpassport`, `idfront`,
+`idback` and `passport` route to the `prebuilt-idDocument` model; `invoice`
+routes to `prebuilt-invoice`. Any other value returns `"Unrecognized type"` in
+the extraction field rather than an error.
 
-Este proyecto está bajo la licencia **MIT**. ¡Siéntete libre de usarlo y modificarlo como gustes! 🎉
+Returns `200` with a `PhotoResponse[]`. Errors return an `ErrorResponse`:
+`400` for invalid arguments or malformed URIs, `503` when an upstream HTTP call
+fails, `500` otherwise.
 
----
+Field-by-field response schema and worked examples in
+[`docs/API.md`](docs/API.md).
 
-Con esta guía, estás listo para empezar a usar **Document Analyzer**. ¡Disfruta de la automatización y análisis de imágenes con la potencia de .NET y Azure! 🚀
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [`docs/API.md`](docs/API.md) | Endpoint contract, response schema, examples |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layering, request lifecycle, service responsibilities |
+| [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) | Every setting, environment-variable form, Azure setup |
+| [`docs/SCORING.md`](docs/SCORING.md) | How each score is computed, and what it cannot tell you |
+
+## Platform support
+
+`MetadataReaderUtil` reads EXIF through `System.Drawing.Common`, which since
+.NET 7 is **supported only on Windows**. The project compiles everywhere, but
+metadata extraction throws `PlatformNotSupportedException` at runtime on Linux
+and macOS, so the `Genuine`, `Live` and `Modified` scores are Windows-only in
+their current form. Migrating to a cross-platform EXIF reader is tracked in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#known-technical-debt).
+
+## Known limitations
+
+This project is a working prototype, and it is more useful documented honestly
+than oversold:
+
+- **The scores are heuristics.** A `Genuine` score of 100% means two EXIF tags
+  were present, which any metadata editor can forge. Treat the output as a
+  triage signal, not evidence.
+- **The endpoint is unauthenticated.** There is no API key, no rate limiting
+  and no request-size cap. Do not expose it publicly as-is.
+- **Uploads land in a public blob container.** `FileStorageAzureService`
+  creates the container with `PublicAccessType.Blob` because the Azure AI
+  services fetch the image over an anonymous URL. Uploaded documents are
+  therefore world-readable by URL and are never deleted. A SAS-token flow
+  would be the correct fix.
+- **There are no automated tests.** CI verifies that the project builds; it
+  does not verify behaviour.
+
+## Contributing
+
+Issues and pull requests are welcome — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports should follow
+[`SECURITY.md`](SECURITY.md) rather than the public issue tracker.
+
+## License
+
+[MIT](LICENSE) © dcosodev

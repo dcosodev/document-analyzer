@@ -396,3 +396,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Local configuration containing real credentials
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+
+# Serilog file sink output
+logs/

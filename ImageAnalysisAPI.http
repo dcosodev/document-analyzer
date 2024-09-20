@@ -1,30 +1,68 @@
-### Análisis de imagen
-POST http://localhost:5279/api/ImageAnalysis/imageAnalyse
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+@host = https://localhost:5001
 
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="paths"
+### Analyse an identity document supplied as a public URL
+POST {{host}}/api/ImageAnalysis/imageAnalyse
+Content-Type: multipart/form-data; boundary=----RequestBoundary
 
-https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="gps"
-
-40.712776,-74.005974
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="clientIP"
-
-127.0.0.1
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="clientCamera"
-
-false
-------WebKitFormBoundary7MA4YWxkTrZu0gW
+------RequestBoundary
 Content-Disposition: form-data; name="type"
 
 idpassport
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="images"; filename="C:\Users\Smath\Documents\JUSTIFICANTE30_11.pdf"
-Content-Type: application/pdf
+------RequestBoundary
+Content-Disposition: form-data; name="paths"
 
-<El contenido binario del archivo PDF>
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
+https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png
+------RequestBoundary
+Content-Disposition: form-data; name="gps"
+
+40.712776,-74.005974
+------RequestBoundary
+Content-Disposition: form-data; name="clientIP"
+
+8.8.8.8
+------RequestBoundary
+Content-Disposition: form-data; name="clientCamera"
+
+false
+------RequestBoundary--
+
+### Analyse an uploaded file
+# Replace ./sample-passport.jpg with a local image before sending.
+POST {{host}}/api/ImageAnalysis/imageAnalyse
+Content-Type: multipart/form-data; boundary=----RequestBoundary
+
+------RequestBoundary
+Content-Disposition: form-data; name="type"
+
+idpassport
+------RequestBoundary
+Content-Disposition: form-data; name="images"; filename="sample-passport.jpg"
+Content-Type: image/jpeg
+
+< ./sample-passport.jpg
+------RequestBoundary--
+
+### Detect face attributes in a selfie
+POST {{host}}/api/ImageAnalysis/imageAnalyse
+Content-Type: multipart/form-data; boundary=----RequestBoundary
+
+------RequestBoundary
+Content-Disposition: form-data; name="type"
+
+face
+------RequestBoundary
+Content-Disposition: form-data; name="images"; filename="selfie.jpg"
+Content-Type: image/jpeg
+
+< ./selfie.jpg
+------RequestBoundary--
+
+### Error case: neither images nor paths supplied -> 400
+POST {{host}}/api/ImageAnalysis/imageAnalyse
+Content-Type: multipart/form-data; boundary=----RequestBoundary
+
+------RequestBoundary
+Content-Disposition: form-data; name="type"
+
+invoice
+------RequestBoundary--
