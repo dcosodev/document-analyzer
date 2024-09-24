@@ -15,13 +15,26 @@
   <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.6" />
   <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.3" />
   <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.Face" Version="2.7.0-preview.1" />
+  <PackageReference Include="MetadataExtractor" Version="2.8.1" />
   <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
   <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
   <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
   <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
   <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  <PackageReference Include="System.Drawing.Common" Version="8.0.6" />
 </ItemGroup>
 
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ImageAnalysisAPI.Tests" />
+  </ItemGroup>
+
+  <!-- The API project lives at the repository root, so its default source glob
+       would otherwise swallow the test project under tests/. -->
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <Content Remove="tests/**" />
+    <None Remove="tests/**" />
+    <EmbeddedResource Remove="tests/**" />
+  </ItemGroup>
 
 </Project>

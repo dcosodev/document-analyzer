@@ -1,4 +1,3 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using ImageAnalysisAPI.Models;
@@ -14,20 +13,16 @@ namespace ImageAnalysisAPI.Utils
                 throw new ArgumentException("API Key or Endpoint is missing.");
             }
 
+            // The request URI carries the API key, so it is never logged.
             var requestUri = $"{endpoint}?apiKey={apiKey}&ip={addressIP}";
             using (var client = new HttpClient())
             {
-                Console.WriteLine($"Request URI: {requestUri}");
                 var response = await client.GetAsync(requestUri);
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Response: {content}");
 
                 dynamic jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(content);
-                Console.WriteLine($"IP: {jsonResponse.ip}");
-                Console.WriteLine($"Latitude: {jsonResponse.latitude}");
-                Console.WriteLine($"Longitude: {jsonResponse.longitude}");
 
                 return new GeoDetails
                 {

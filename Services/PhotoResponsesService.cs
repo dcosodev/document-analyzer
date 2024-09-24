@@ -88,13 +88,16 @@ namespace ImageAnalysisAPI.Services
             }
         }
 
+        // The Modified score counts the ABSENCE of tampering signals, so 100 means
+        // clean and 0 means both signals fired. The captions below used to be
+        // stated the other way round, which inverted the meaning of the response.
         private string GenerateModifiedExplanation(double modified)
         {
             switch ((int)Math.Round(modified))
             {
-                case 100: return "100%. An editing program and an editing time have been detected.";
+                case 100: return "100%. No editing program has been recognized nor has an editing time been detected.";
                 case 50: return "50%. An editing program or an editing time has been detected.";
-                case 0: return "0%. No editing program has been recognized nor has an editing time been detected.";
+                case 0: return "0%. An editing program and an editing time have been detected.";
                 default: return "";
             }
         }

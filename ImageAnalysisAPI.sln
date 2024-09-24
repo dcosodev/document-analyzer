@@ -5,6 +5,10 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageAnalysisAPI", "ImageAnalysisAPI.csproj", "{A6D43F61-9B6D-42F9-BE5E-06924288AFE6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B9A6C1D4-5E27-48F3-A0B6-7C9D3E1F2A85}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageAnalysisAPI.Tests", "tests\ImageAnalysisAPI.Tests\ImageAnalysisAPI.Tests.csproj", "{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,13 @@ Global
 		{A6D43F61-9B6D-42F9-BE5E-06924288AFE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6D43F61-9B6D-42F9-BE5E-06924288AFE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6D43F61-9B6D-42F9-BE5E-06924288AFE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7E2C4A18-3F6B-4D51-9C0A-5B8E1D2F4A73} = {B9A6C1D4-5E27-48F3-A0B6-7C9D3E1F2A85}
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

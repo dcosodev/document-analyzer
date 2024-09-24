@@ -404,3 +404,6 @@ appsettings.*.json
 
 # Serilog file sink output
 logs/
+
+# Test results
+[Tt]est[Rr]esults/
