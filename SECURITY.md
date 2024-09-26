@@ -28,13 +28,12 @@ are documented rather than hidden:
 | Uploaded blobs are never deleted | Personal data accumulates indefinitely with no retention policy |
 | Blob names are the original file names, uploaded with `overwrite: true` | Two users submitting `passport.jpg` overwrite each other's document |
 | `paths` URLs are fetched server-side without an allow-list | Server-side request forgery against internal network addresses |
-| `IPGeolocationUtil` writes the full request URI to the console | The ipgeolocation API key appears in logs |
 | Serilog writes blob URLs to `logs/` | Log files are as sensitive as the documents themselves |
 
 If you intend to run this against real data, the minimum work is:
 authentication on the endpoint, short-lived SAS tokens instead of public blob
-access, GUID-prefixed blob names, a container retention policy, an allow-list
-for `paths`, and removal of the `Console.WriteLine` diagnostics.
+access, GUID-prefixed blob names, a container retention policy, and an
+allow-list for `paths`.
 
 ## Handling credentials
 

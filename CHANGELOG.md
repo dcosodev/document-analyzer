@@ -27,15 +27,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `idfront`, `idback`, `passport`, `invoice`).
 
 ### Fixed
-- `appsettings.json` and `logs/` are now git-ignored, so live credentials and
-  log output cannot be committed by accident.
+- **`modifiedExplanation` was inverted.** `ModifiedCheckService` awards points
+  for the *absence* of tampering signals, so `100` means clean — but the
+  caption for `100` read *"An editing program and an editing time have been
+  detected."* The `0` and `100` captions are now the right way round. Integrators
+  relying on the old strings should re-check their mapping.
+- **`LiveCheckService` returned `NaN`.** When neither location comparison could
+  run, `locFactors` stayed at `0` and the score divided by it, serialising as
+  `null`. The location component now contributes `0`. Coordinate parsing is
+  validated for shape and uses `TryParse` rather than catching `FormatException`.
+- **EXIF reading no longer requires Windows.** `System.Drawing.Common` has been
+  Windows-only since .NET 7, so metadata extraction threw
+  `PlatformNotSupportedException` on Linux and macOS.  `MetadataReaderUtil` now
+  uses `MetadataExtractor`, and the service is cross-platform.
+- **GPS hemisphere references are honoured.** The previous reader ignored the
+  N/S and E/W reference tags, so coordinates south of the equator or west of
+  Greenwich came back with the wrong sign.
+- **Editing software is read from the correct tag.** `Software` (`0x0131`) is
+  what editors write; `UserComment` (`0x9286`) is kept as a fallback.
+- **Dropped two accidental EXIF mappings** — ISO speed onto `LocationDetails`
+  and image unique ID onto `GpsLocMeta`.
+- `appsettings.json`, `logs/` and test results are now git-ignored, so live
+  credentials and log output cannot be committed by accident.
 - Removed a personal local file path from the sample request in
   `ImageAnalysisAPI.http`.
 
+- `tests/ImageAnalysisAPI.Tests` (xUnit), covering the three scoring services
+  and coordinate handling, run on Ubuntu and Windows in CI.
+
+### Removed
+- `System.Drawing.Common`, replaced by `MetadataExtractor`.
+- The `Console.WriteLine` diagnostics in `IPGeolocationUtil` and
+  `LiveCheckService`. One of them printed the full ipgeolocation request URI,
+  including the API key. Location diagnostics now go through `ILogger` at
+  `Debug` level.
+
 ### Known issues
-Tracked in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#known-technical-debt),
-including the inverted `ModifiedExplanation` captions, a divide-by-zero in
-`LiveCheckService`, and the Windows-only EXIF reader.
+Remaining gaps are tracked in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#known-technical-debt): the
+endpoint is unauthenticated, uploaded blobs are publicly readable and never
+expire, and EXIF timezone offsets are still ignored.
 
 ## [0.1.0] — 2024-09-13
 

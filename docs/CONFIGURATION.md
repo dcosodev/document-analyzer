@@ -104,4 +104,7 @@ exception page and the `/swagger` UI.
 
 Serilog writes to the console and to `logs/log-<date>.txt`, rolling daily. The
 `logs/` directory is git-ignored. Log output includes blob URLs of uploaded
-documents, so treat the log files as sensitive.
+documents, so treat the log files as sensitive. API keys are never logged.
+
+Distance and score diagnostics from `LiveCheckService` are emitted at `Debug`
+level; set `Logging:LogLevel:Default` to `Debug` to see them.

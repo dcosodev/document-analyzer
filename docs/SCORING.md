@@ -78,10 +78,10 @@ live = ((locScore / locFactors) + dateScore) / 2 × 100
 > recency point. Correcting this requires reading the `OffsetTimeDigitized`
 > tag, which the current metadata reader does not.
 
-> **Division by zero.** When neither location comparison can run — no
-> caller-supplied `gps` and no IP-derived location — `locFactors` stays `0`
-> and the expression yields `NaN` rather than `0`. See
-> [ARCHITECTURE.md](ARCHITECTURE.md#known-technical-debt).
+> **No location signals.** When neither comparison can run — no caller-supplied
+> `gps` and no IP-derived location — the location component contributes `0`,
+> so a recent photo with no location at all scores `50`. Earlier versions
+> divided by zero here and returned `NaN`.
 
 ---
 
@@ -93,7 +93,7 @@ Two factors, each worth one point:
 
 | Signal | Point awarded when |
 |---|---|
-| Editing-software metadata (EXIF `0x9286`) | **absent** |
+| Editing-software metadata (EXIF `0x0131` `Software`, falling back to `0x9286` `UserComment`) | **absent** |
 | Original vs. modified timestamps | **equal**, or the original is absent |
 
 `score = (points / 2) × 100`
@@ -104,11 +104,15 @@ The scale runs opposite to what the name suggests: **100 means no evidence of
 modification was found**, 0 means both tampering signals fired. Read it as a
 "clean" score rather than a "modified" score.
 
-The explanation strings returned in `modifiedExplanation` currently describe
-the inverse — `100` is captioned *"An editing program and an editing time have
-been detected."* This is a known defect, tracked in
-[ARCHITECTURE.md](ARCHITECTURE.md#known-technical-debt); rely on the numeric
-value, not the caption, until it is resolved.
+| Value | `modifiedExplanation` |
+|---|---|
+| 100 | No editing program has been recognized nor has an editing time been detected. |
+| 50 | An editing program or an editing time has been detected. |
+| 0 | An editing program and an editing time have been detected. |
+
+Earlier versions returned these captions inverted, describing `100` as
+evidence of editing. If you integrated against that behaviour, re-check your
+mapping.
 
 ---
 

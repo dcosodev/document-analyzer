@@ -82,33 +82,32 @@ connection string is absent.
 
 ---
 
+## Testing
+
+`tests/ImageAnalysisAPI.Tests` (xUnit) covers the three scoring services and
+the coordinate handling in `MetadataReaderUtil`. They are pure functions over
+primitives, so no test doubles are needed beyond `NullLogger<T>`.
+`InternalsVisibleTo` exposes the internal helpers `CalculateDistance`,
+`IsRecent` and `FormatCoordinates` to the test assembly.
+
+The API project sits at the repository root, so its default source glob is
+explicitly told to skip `tests/**` in `ImageAnalysisAPI.csproj`.
+
+Not covered: the controller, the Azure-backed services and blob storage. Those
+need live credentials, and an integration suite behind a CI secret would be the
+next step.
+
+---
+
 ## Known technical debt
 
 Recorded deliberately: this is a prototype, and the gaps are worth naming.
 
 ### Correctness
 
-- **`ModifiedExplanation` is inverted.** `ModifiedCheckService` awards points
-  for the *absence* of tampering signals, so `100` means "clean", but the
-  caption for `100` reads *"An editing program and an editing time have been
-  detected."* The captions for `0` and `100` need to be swapped.
-- **`LiveCheckService` can divide by zero.** When neither location comparison
-  runs, `locFactors` is `0` and the score becomes `NaN`. It should short-circuit
-  to `0`.
 - **EXIF timezone handling.** Capture timestamps are compared against
-  `DateTime.UtcNow` without reading the offset tags, penalising legitimate
-  photos taken outside UTC.
-- **Overloaded EXIF tags.** `MetadataReaderUtil` maps ISO speed (`0x8827`) onto
-  `LocationDetails` and image unique ID (`0xA420`) onto `GpsLocMeta`, which are
-  then overwritten when real GPS tags exist. These mappings look accidental.
-
-### Portability
-
-- **`System.Drawing.Common` is Windows-only** from .NET 7 onward. The project
-  builds on any platform but EXIF reading throws
-  `PlatformNotSupportedException` on Linux and macOS. Replacing
-  `MetadataReaderUtil` with `MetadataExtractor` or `ImageSharp` would make the
-  whole service cross-platform and is the highest-value single change here.
+  `DateTime.UtcNow` without reading the `OffsetTimeDigitized` tag, penalising
+  legitimate photos taken outside UTC.
 
 ### Security
 
@@ -140,8 +139,19 @@ Recorded deliberately: this is a prototype, and the gaps are worth naming.
 - **The two branches of `ImageProcessingService.AnalyzeImages`** — files and
   URLs — are near-identical copies of ~60 lines. They should converge once
   both paths produce a `FileInfo`.
-- **`Console.WriteLine` diagnostics** remain in `LiveCheckService` and
-  `IPGeolocationUtil` alongside the Serilog logger, and the latter prints the
-  full request URI including the API key.
-- **No test project.** CI verifies compilation only. The three scorers are pure
-  functions over primitives and would be straightforward to cover first.
+- **No integration coverage.** The scorers are tested; the Azure paths,
+  controller and storage services are not.
+
+## Resolved
+
+Kept for context, since earlier revisions of this document listed them as open:
+
+- The inverted `ModifiedExplanation` captions were swapped.
+- `LiveCheckService` no longer divides by zero when no location comparison can
+  run.
+- `System.Drawing.Common` was replaced with `MetadataExtractor`, making the
+  service cross-platform and fixing GPS hemisphere signs along the way.
+- The accidental EXIF mappings (ISO speed onto `LocationDetails`, image unique
+  ID onto `GpsLocMeta`) were removed.
+- The `Console.WriteLine` diagnostics were removed, including the one that
+  printed the ipgeolocation API key.

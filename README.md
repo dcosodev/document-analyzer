@@ -1,6 +1,7 @@
 # Document Analyzer
 
 [![CI](https://github.com/dcosodev/document-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/dcosodev/document-analyzer/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen)](tests/ImageAnalysisAPI.Tests)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -29,7 +30,7 @@ and had not been retouched before upload.
 - [Configuration](#configuration)
 - [API reference](#api-reference)
 - [Documentation](#documentation)
-- [Platform support](#platform-support)
+- [Testing](#testing)
 - [Known limitations](#known-limitations)
 - [Contributing](#contributing)
 - [License](#license)
@@ -86,8 +87,7 @@ directly presentable to an end user or a reviewing agent.
 
 **Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download) and an
 Azure subscription with Document Intelligence, Face API and Blob Storage
-resources. See [Platform support](#platform-support) before running on
-macOS or Linux.
+resources. Runs on Windows, macOS and Linux.
 
 ```bash
 git clone https://github.com/dcosodev/document-analyzer.git
@@ -170,14 +170,19 @@ Field-by-field response schema and worked examples in
 | [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) | Every setting, environment-variable form, Azure setup |
 | [`docs/SCORING.md`](docs/SCORING.md) | How each score is computed, and what it cannot tell you |
 
-## Platform support
+## Testing
 
-`MetadataReaderUtil` reads EXIF through `System.Drawing.Common`, which since
-.NET 7 is **supported only on Windows**. The project compiles everywhere, but
-metadata extraction throws `PlatformNotSupportedException` at runtime on Linux
-and macOS, so the `Genuine`, `Live` and `Modified` scores are Windows-only in
-their current form. Migrating to a cross-platform EXIF reader is tracked in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#known-technical-debt).
+```bash
+dotnet test
+```
+
+31 tests cover the three scoring services and the coordinate handling in the
+metadata reader, including regression tests for the defects listed in the
+[changelog](CHANGELOG.md). CI runs them on Ubuntu and Windows on every push.
+
+The scorers are pure functions over primitives, so they are tested directly.
+The Azure-backed services are not covered — exercising them requires live
+credentials, and no integration suite exists yet.
 
 ## Known limitations
 
@@ -187,6 +192,9 @@ than oversold:
 - **The scores are heuristics.** A `Genuine` score of 100% means two EXIF tags
   were present, which any metadata editor can forge. Treat the output as a
   triage signal, not evidence.
+- **EXIF timestamps carry no timezone.** The recency check compares against
+  UTC without reading the `OffsetTimeDigitized` tag, so a genuinely fresh
+  photo taken outside UTC can lose the recency point.
 - **The endpoint is unauthenticated.** There is no API key, no rate limiting
   and no request-size cap. Do not expose it publicly as-is.
 - **Uploads land in a public blob container.** `FileStorageAzureService`
@@ -194,8 +202,8 @@ than oversold:
   services fetch the image over an anonymous URL. Uploaded documents are
   therefore world-readable by URL and are never deleted. A SAS-token flow
   would be the correct fix.
-- **There are no automated tests.** CI verifies that the project builds; it
-  does not verify behaviour.
+- **Only the scoring logic is tested.** The Azure integrations, the controller
+  and the storage services have no automated coverage.
 
 ## Contributing
 
