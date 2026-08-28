@@ -54,6 +54,7 @@ namespace ImageAnalysisAPI.Services
                     if (image.Length > 0)
                     {
                         var localFile = await _fileStorageLocalService.StoreFileLocalAsync(image);
+                        string? blobName = null;
                         try
                         {
                             var metadata = MetadataReaderUtil.ReadMetadata(localFile);
@@ -72,10 +73,10 @@ namespace ImageAnalysisAPI.Services
                             response.PhotoName = Path.GetFileName(localFile.FullName);
 
                             // Upload to Azure Storage and get URL
-                            var blobName = await _fileStorageAzureService.StoreFileAzure(localFile);
-                            var imageUrl = _fileStorageAzureService.GetBlobUrl(blobName);
+                            blobName = await _fileStorageAzureService.StoreFileAzure(localFile);
+                            var imageUrl = _fileStorageAzureService.GenerateSasUrl(blobName);
 
-                            _logger.LogInformation("Blob URL: {ImageUrl}", imageUrl); // Imprimir la URL del blob
+                            _logger.LogDebug("Uploaded temporary blob {BlobName} for image analysis.", blobName);
 
                             _logger.LogInformation("Processing image for type: {Type}", type);
 
@@ -86,7 +87,7 @@ namespace ImageAnalysisAPI.Services
                                 _logger.LogInformation("Face Data: {FaceData}", faceData);
                                 if (string.IsNullOrEmpty(faceData) || faceData == "No faces detected.")
                                 {
-                                    _logger.LogWarning("No faces detected for image: {ImageUrl}", imageUrl);
+                                    _logger.LogWarning("No faces detected for uploaded image.");
                                 }
                                 else
                                 {
@@ -107,6 +108,10 @@ namespace ImageAnalysisAPI.Services
                         }
                         finally
                         {
+                            if (blobName is not null)
+                            {
+                                await _fileStorageAzureService.DeleteAzureFile(blobName);
+                            }
                             _fileStorageLocalService.DeleteLocalFile(localFile);
                         }
                     }
@@ -124,6 +129,7 @@ namespace ImageAnalysisAPI.Services
                             var uri = new Uri(path);
                             var tempFilePath = Path.Combine(Path.GetTempPath(), $"downloaded-{Path.GetFileName(uri.LocalPath)}");
                             var localFile = new FileInfo(tempFilePath);
+                            string? blobName = null;
 
                             using (var client = new HttpClient())
                             {
@@ -157,10 +163,10 @@ namespace ImageAnalysisAPI.Services
                                 response.PhotoName = Path.GetFileName(localFile.FullName);
 
                                 // Upload to Azure Storage and get URL
-                                var blobName = await _fileStorageAzureService.StoreFileAzure(localFile);
-                                var imageUrl = _fileStorageAzureService.GetBlobUrl(blobName);
+                                blobName = await _fileStorageAzureService.StoreFileAzure(localFile);
+                                var imageUrl = _fileStorageAzureService.GenerateSasUrl(blobName);
 
-                                _logger.LogInformation("Blob URL: {ImageUrl}", imageUrl); // Imprimir la URL del blob
+                                _logger.LogDebug("Uploaded temporary blob {BlobName} for image analysis.", blobName);
 
                                 _logger.LogInformation("Processing image from URL for type: {Type}", type);
 
@@ -171,7 +177,7 @@ namespace ImageAnalysisAPI.Services
                                     _logger.LogInformation("Face Data: {FaceData}", faceData);
                                     if (string.IsNullOrEmpty(faceData) || faceData == "No faces detected.")
                                     {
-                                        _logger.LogWarning("No faces detected for image: {ImageUrl}", imageUrl);
+                                        _logger.LogWarning("No faces detected for uploaded image.");
                                     }
                                     else
                                     {
@@ -192,6 +198,10 @@ namespace ImageAnalysisAPI.Services
                             }
                             finally
                             {
+                                if (blobName is not null)
+                                {
+                                    await _fileStorageAzureService.DeleteAzureFile(blobName);
+                                }
                                 _fileStorageLocalService.DeleteLocalFile(localFile);
                             }
                         }

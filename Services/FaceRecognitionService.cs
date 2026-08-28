@@ -36,7 +36,7 @@ namespace ImageAnalysisAPI.Services
         {
             try
             {
-                _logger.LogInformation("Starting face recognition for image: {ImageUrl}", imageUrl);
+                _logger.LogInformation("Starting face recognition for uploaded image.");
 
                 var faceAttributes = new List<FaceAttributeType>
                 {
@@ -56,7 +56,7 @@ namespace ImageAnalysisAPI.Services
 
                 if (faces == null || faces.Count == 0)
                 {
-                    _logger.LogWarning("No faces detected for image: {ImageUrl}", imageUrl);
+                    _logger.LogWarning("No faces detected for uploaded image.");
                     return "No faces detected.";
                 }
 
@@ -77,12 +77,12 @@ namespace ImageAnalysisAPI.Services
                     result.AppendLine($"- Noise: {face.FaceAttributes.Noise.NoiseLevel}, Value: {face.FaceAttributes.Noise.Value}");
                 }
 
-                _logger.LogInformation("Face recognition completed for image: {ImageUrl}", imageUrl);
+                _logger.LogInformation("Face recognition completed for uploaded image.");
                 return result.ToString();
             }
             catch (APIErrorException e)
             {
-                _logger.LogError(e, "API error occurred while analyzing the face for image: {ImageUrl}", imageUrl);
+                _logger.LogError(e, "API error occurred while analyzing the face.");
                 if (e.Response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     _logger.LogError("Access to the Face API was forbidden. Please check your subscription key and endpoint.");
@@ -91,8 +91,8 @@ namespace ImageAnalysisAPI.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "An error occurred while analyzing the face for image: {ImageUrl}", imageUrl);
-                return $"An error occurred while analyzing the face: {e.Message}";
+                _logger.LogError(e, "An error occurred while analyzing the face.");
+                return "An error occurred while analyzing the face.";
             }
         }
     }

@@ -176,9 +176,10 @@ Field-by-field response schema and worked examples in
 dotnet test
 ```
 
-31 tests cover the three scoring services and the coordinate handling in the
-metadata reader, including regression tests for the defects listed in the
-[changelog](CHANGELOG.md). CI runs them on Ubuntu and Windows on every push.
+33 tests cover the three scoring services, coordinate handling in the metadata
+reader and request validation, including regression tests for the defects listed
+in the [changelog](CHANGELOG.md). CI runs them on Ubuntu and Windows on every
+push.
 
 The scorers are pure functions over primitives, so they are tested directly.
 The Azure-backed services are not covered — exercising them requires live
@@ -195,15 +196,16 @@ than oversold:
 - **EXIF timestamps carry no timezone.** The recency check compares against
   UTC without reading the `OffsetTimeDigitized` tag, so a genuinely fresh
   photo taken outside UTC can lose the recency point.
-- **The endpoint is unauthenticated.** There is no API key, no rate limiting
-  and no request-size cap. Do not expose it publicly as-is.
-- **Uploads land in a public blob container.** `FileStorageAzureService`
-  creates the container with `PublicAccessType.Blob` because the Azure AI
-  services fetch the image over an anonymous URL. Uploaded documents are
-  therefore world-readable by URL and are never deleted. A SAS-token flow
-  would be the correct fix.
-- **Only the scoring logic is tested.** The Azure integrations, the controller
-  and the storage services have no automated coverage.
+- **The endpoint is unauthenticated.** There is no API key or rate limiting. Do
+  not expose it publicly as-is.
+- **Request limits are enforced.** Each request is limited to 50 MB, with at
+  most 10 non-empty inputs and 10 MB per uploaded file.
+- **Uploads use private blob storage.** Files are exposed to Azure AI only
+  through a read-only SAS URL valid for one hour and are deleted after analysis.
+  If deletion fails, configure Azure Storage lifecycle policies as a second
+  control.
+- **Only pure logic and request validation are tested.** The Azure integrations,
+  controller and storage services have no automated integration coverage.
 
 ## Contributing
 

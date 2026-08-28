@@ -90,7 +90,7 @@ namespace ImageAnalysisAPI.Services
             catch (Exception e)
             {
                 _logger.LogError(e, "An error occurred while analyzing the document");
-                return $"An error occurred while analyzing the document: {e.Message}";
+                return "An error occurred while analyzing the document.";
             }
         }
     }

@@ -23,6 +23,7 @@ namespace ImageAnalysisAPI.Controllers
         }
 
         [HttpPost("imageAnalyse")]
+        [RequestSizeLimit(50 * 1024 * 1024)]
         public async Task<IActionResult> AnalyzeImages(
             [FromForm] string[] paths = null,
             [FromForm] string gps = "",
@@ -67,8 +68,8 @@ namespace ImageAnalysisAPI.Controllers
             }
             catch (Exception ex)
             {
-                var errorResponse = new ErrorResponse($"An unexpected error occurred: {ex.Message}");
-                _logger.LogError(ex, errorResponse.ErrorMessage);
+                var errorResponse = new ErrorResponse("An unexpected error occurred while processing the request.");
+                _logger.LogError(ex, "Unexpected error while processing image analysis request.");
                 return StatusCode(StatusCodes.Status500InternalServerError, errorResponse);
             }
         }

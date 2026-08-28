@@ -20,7 +20,7 @@ namespace ImageAnalysisAPI.Services
         public async Task<string> StoreFileAzure(FileInfo file)
         {
             BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+            await containerClient.CreateIfNotExistsAsync();
             BlobClient blobClient = containerClient.GetBlobClient(file.Name);
 
             using (FileStream uploadFileStream = File.OpenRead(file.FullName))
@@ -29,13 +29,6 @@ namespace ImageAnalysisAPI.Services
             }
 
             return file.Name;
-        }
-
-        public string GetBlobUrl(string blobName)
-        {
-            BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-            BlobClient blobClient = containerClient.GetBlobClient(blobName);
-            return blobClient.Uri.ToString();
         }
 
         public string GenerateSasUrl(string blobName)
